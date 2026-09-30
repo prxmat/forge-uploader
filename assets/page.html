@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge Uploader</title>
+<link rel="icon" href="/icon.png">
+<style>
+  :root { color-scheme: dark; --page: #191e24; --surface: #1d232a; --sunken: #15191e; --line: #2f3843; --text: #eef0f3; --muted: #a6adbb; --red: #f44336; --red-fill: #d32f2f; --ok: #4cc98c; --ok-bg: #193634; --warn: #ffcf4d; --warn-bg: #3d3924; --bad: #ff8a8f; --bad-bg: #3d2a32; --sky: #9dc0e0; --sky-wash: #2c3640; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text); font: 14px/1.5 system-ui, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  header img { width: 32px; height: 32px; border-radius: 8px; }
+  header h1 { margin: 0; font-size: 17px; }
+  header h1 small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+  nav { margin-left: auto; display: flex; gap: 4px; }
+  nav a { padding: 6px 12px; border-radius: 999px; color: var(--muted); text-decoration: none; }
+  nav a.active { background: var(--sky-wash); color: var(--text); }
+  main { max-width: 900px; margin: 0 auto; padding: 20px; }
+  .status { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); margin-bottom: 16px; }
+  .status i { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+  .status.ok i { background: var(--ok); box-shadow: 0 0 0 4px var(--ok-bg); }
+  .status.bad i { background: var(--bad); box-shadow: 0 0 0 4px var(--bad-bg); }
+  .status a { color: var(--sky); }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; }
+  td { padding: 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  td.link { white-space: nowrap; }
+  td.time { font-family: ui-monospace, Consolas, monospace; color: var(--muted); white-space: nowrap; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+  .pill.kill { background: var(--ok-bg); color: var(--ok); }
+  .pill.wipe { background: var(--bad-bg); color: var(--bad); }
+  .pill.wvw { background: var(--sky-wash); color: var(--sky); }
+  .st-uploading, .st-forge { color: var(--warn); }
+  .st-done { color: var(--ok); }
+  .st-rejected { color: var(--warn); }
+  .st-error { color: var(--bad); }
+  td a { color: var(--sky); }
+  .empty { padding: 30px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+  form { display: grid; gap: 14px; }
+  label { display: grid; gap: 4px; }
+  label span { font-size: 12px; color: var(--muted); }
+  label small { color: var(--muted); font-size: 12px; }
+  input[type=text], input[type=password] { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--sunken); color: var(--text); font: inherit; width: 100%; }
+  label.check { grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
+  button { justify-self: start; padding: 8px 16px; border-radius: 999px; border: 0; background: var(--red-fill); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button:hover { background: var(--red); }
+  .saved { padding: 8px 12px; border-radius: 8px; background: var(--ok-bg); color: var(--ok); }
+  pre { padding: 12px; border-radius: 12px; background: var(--sunken); border: 1px solid var(--line); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+  .hint { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <img src="/icon.png" alt="">
+  <h1>Forge Uploader <small>{{.Version}}</small></h1>
+  <nav>
+    <a href="/" class="{{if eq .Tab "logs"}}active{{end}}">Logs</a>
+    <a href="/reglages" class="{{if eq .Tab "settings"}}active{{end}}">Réglages</a>
+    <a href="/journal" class="{{if eq .Tab "journal"}}active{{end}}">Journal</a>
+    <a href="{{.ForgeURL}}" target="_blank">Forge ↗</a>
+  </nav>
+</header>
+<main>
+  <div class="status {{if .Problem}}bad{{else if .Member}}ok{{end}}">
+    <i></i>
+    {{if .Problem}}<span>{{.Problem}} <a href="/reglages">Réglages</a></span>
+    {{else if .Member}}<span>Connecté à Forge : <strong>{{.Member}}</strong> · surveille <code>{{.Config.LogsDir}}</code></span>
+    {{else}}<span>Connexion à Forge…</span>{{end}}
+  </div>
+
+  {{if eq .Tab "logs"}}
+    {{if .History}}
+    <table>
+      <thead><tr><th>Heure</th><th>Combat</th><th>État</th><th>Lien</th></tr></thead>
+      <tbody>
+      {{range .History}}
+        <tr>
+          <td class="time" title="{{day .At}}">{{clock .At}}</td>
+          <td>{{if .Boss}}{{.Boss}} {{if eq .Kind "wvw"}}<span class="pill wvw">McM</span>{{else if .Success}}<span class="pill kill">kill</span>{{else}}<span class="pill wipe">wipe</span>{{end}}{{else}}<span class="hint">{{.File}}</span>{{end}}</td>
+          <td class="st-{{.Status}}">{{if eq .Status "uploading"}}Envoi sur dps.report…{{else if eq .Status "forge"}}Rangement dans Forge…{{else if eq .Status "done"}}{{.Where}}{{else if eq .Status "rejected"}}{{.Where}}{{else}}{{.Where}}{{end}}</td>
+          <td class="link">{{if .Permalink}}<a href="{{.Permalink}}" target="_blank">dps.report ↗</a>{{end}}</td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <div class="empty">Aucun log envoyé pour l’instant. Joue : chaque combat apparaîtra ici dès qu’arcdps l’aura écrit.</div>
+    {{end}}
+  {{end}}
+
+  {{if eq .Tab "settings"}}
+    {{if .Saved}}<p class="saved">Réglages enregistrés.</p>{{end}}
+    <form method="post" action="/reglages">
+      <label><span>Token Forge Uploader</span><input type="text" name="token" value="{{.Config.Token}}" autocomplete="off" spellcheck="false" placeholder="Forge → Mon suivi → Réglages → Forge Uploader → Créer mon token"><small>Personnel : il tient lieu de connexion. Se régénère dans Forge.</small></label>
+      <label><span>Token dps.report (facultatif)</span><input type="text" name="dps_report_user_token" value="{{.Config.DpsReportUserToken}}" autocomplete="off" spellcheck="false" placeholder="pour que les logs apparaissent aussi sur ton compte dps.report"><small>Un seul par uploader : dps.report rattache chaque envoi à un compte au moment de l’envoi.</small></label>
+      <label><span>Dossier des logs arcdps</span><input type="text" name="logs_dir" value="{{.Config.LogsDir}}" spellcheck="false"><small>Tous les sous-dossiers sont surveillés (par boss, par personnage, McM).</small></label>
+      <label class="check"><input type="checkbox" name="detailed_wvw" {{if .Config.DetailedWvw}}checked{{end}}><span>McM détaillé (nécessaire à l’analyse McM de Forge)</span></label>
+      <label class="check"><input type="checkbox" name="start_with_windows" {{if .Config.StartWithWindows}}checked{{end}}><span>Démarrer avec Windows (dans la zone de notification)</span></label>
+      <label><span>Adresse de Forge</span><input type="text" name="forge_url" value="{{.Config.ForgeURL}}" spellcheck="false"></label>
+      <button type="submit">Enregistrer</button>
+      <p class="hint">Fichiers dans <code>{{.ConfigDir}}</code>.</p>
+    </form>
+  {{end}}
+
+  {{if eq .Tab "journal"}}
+    <pre>{{.Journal}}</pre>
+  {{end}}
+</main>
+<script>
+  // La page suit l'uploader : un changement d'état ou un nouvel envoi la recharge (sauf en cours de saisie).
+  if (document.body.dataset.tab !== "settings" && !location.pathname.startsWith("/reglages")) {
+    const source = new EventSource("/events");
+    source.onmessage = () => location.reload();
+  }
+</script>
+</body>
+</html>
