@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	version       = "0.1.0"
+	version       = "0.1.1"
 	defaultForge  = "https://forge-lbm.vercel.app"
 	dpsReportBase = "https://dps.report"
 	scanEvery     = 3 * time.Second
@@ -48,6 +48,9 @@ type uploadResponse struct {
 
 type intakeResponse struct {
 	Stored       bool   `json:"stored"`
+	Kind         string `json:"kind"`
+	Title        string `json:"title"`
+	Fights       int    `json:"fights"`
 	Reason       string `json:"reason"`
 	Roster       string `json:"roster"`
 	Encounter    string `json:"encounter"`
@@ -168,6 +171,14 @@ func handle(cfg *config, path string, say func(string, ...any)) {
 	}
 	if !in.Stored {
 		say("  Forge : %s", in.Reason)
+		return
+	}
+	if in.Kind == "wvw" {
+		known := ""
+		if in.Known {
+			known = " (déjà connu)"
+		}
+		say("  McM → %s, %d combat(s)%s", in.Title, in.Fights, known)
 		return
 	}
 	extra := ""
