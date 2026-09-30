@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	version       = "0.2.0"
+	version       = "0.2.1"
 	defaultForge  = "https://forge-lbm.vercel.app"
 	dpsReportBase = "https://dps.report"
 	// Adresse de la fenêtre de l'app (locale, jamais exposée).

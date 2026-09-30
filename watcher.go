@@ -171,7 +171,7 @@ func uploadToDpsReport(cfg *config, path string) (*uploadResponse, error) {
 	writer.Close()
 	query := url.Values{"json": {"1"}, "generator": {"ei"}}
 	if cfg.DetailedWvw {
-		query.Set("detailedwvw", "1")
+		query.Set("detailedwvw", "true")
 	}
 	if cfg.DpsReportUserToken != "" {
 		query.Set("userToken", cfg.DpsReportUserToken)
