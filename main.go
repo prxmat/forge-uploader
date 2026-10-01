@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	version       = "0.2.2"
+	version       = "0.3.0"
 	defaultForge  = "https://forge-lbm.vercel.app"
 	dpsReportBase = "https://dps.report"
 	// Adresse de la fenêtre de l'app (locale, jamais exposée).
@@ -44,6 +44,9 @@ type entry struct {
 	Permalink string    `json:"permalink"`
 	Where     string    `json:"where"`
 	Kind      string    `json:"kind"`
+	Path      string    `json:"path,omitempty"`
+	Attempts  int       `json:"attempts,omitempty"`
+	NextTry   time.Time `json:"next_try,omitempty"`
 }
 
 type app struct {
@@ -53,6 +56,7 @@ type app struct {
 	member  string // Nom Forge quand le token est accepté, sinon vide.
 	problem string // Ce qui bloque (token, dossier…), sinon vide.
 	history []entry
+	seen    map[string]bool // Les logs déjà envoyés (chemins), persistés dans seen.json.
 	logFile *os.File
 	// Les abonnés de la fenêtre (SSE) reçoivent chaque changement.
 	subs map[chan struct{}]struct{}
@@ -66,7 +70,7 @@ func main() {
 		fmt.Println("Erreur :", err)
 		os.Exit(1)
 	}
-	a := &app{dir: dir, subs: map[chan struct{}]struct{}{}}
+	a := &app{dir: dir, subs: map[chan struct{}]struct{}{}, seen: loadSeen(dir)}
 	a.cfg = loadConfig(dir)
 	a.logFile, _ = os.OpenFile(filepath.Join(dir, "forge-uploader.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	a.loadHistory()

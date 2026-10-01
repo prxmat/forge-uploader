@@ -72,6 +72,18 @@ func (a *app) serve() {
 		a.render(w, "settings", r.URL.Query().Get("ok") == "1")
 	})
 	mux.HandleFunc("/journal", func(w http.ResponseWriter, r *http.Request) { a.render(w, "journal", false) })
+	mux.HandleFunc("/renvoyer", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			a.resend(r.FormValue("file"))
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	})
+	mux.HandleFunc("/rattraper", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			a.catchUp()
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	})
 	mux.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
 		flusher, ok := w.(http.Flusher)
 		if !ok {

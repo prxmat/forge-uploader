@@ -22,6 +22,8 @@
   .status.ok i { background: var(--ok); box-shadow: 0 0 0 4px var(--ok-bg); }
   .status.bad i { background: var(--bad); box-shadow: 0 0 0 4px var(--bad-bg); }
   .status a { color: var(--sky); }
+  .catchup { margin: 0 0 12px; } .catchup button, .inline button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: inherit; cursor: pointer; }
+  .inline { display: inline; margin-left: 6px; } .st-retry { color: var(--muted); }
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; }
   td { padding: 8px; border-top: 1px solid var(--line); vertical-align: top; }
@@ -70,6 +72,7 @@
   </div>
 
   {{if eq .Tab "logs"}}
+    <form method="post" action="/rattraper" class="catchup"><button type="submit" title="Envoie les logs des 8 dernières heures qui ne sont jamais partis">Rattraper les logs des 8 dernières heures</button></form>
     {{if .History}}
     <table>
       <thead><tr><th>Heure</th><th>Combat</th><th>État</th><th>Lien</th></tr></thead>
@@ -78,8 +81,8 @@
         <tr>
           <td class="time" title="{{day .At}}">{{clock .At}}</td>
           <td>{{if .Boss}}{{.Boss}} {{if eq .Kind "wvw"}}<span class="pill wvw">McM</span>{{else if .Success}}<span class="pill kill">kill</span>{{else}}<span class="pill wipe">wipe</span>{{end}}{{else}}<span class="hint">{{.File}}</span>{{end}}</td>
-          <td class="st-{{.Status}}">{{if eq .Status "uploading"}}Envoi sur dps.report…{{else if eq .Status "forge"}}Rangement dans Forge…{{else if eq .Status "done"}}{{.Where}}{{else if eq .Status "rejected"}}{{.Where}}{{else}}{{.Where}}{{end}}</td>
-          <td class="link">{{if .Permalink}}<a href="{{.Permalink}}" target="_blank">dps.report ↗</a>{{end}}</td>
+          <td class="st-{{.Status}}">{{if eq .Status "uploading"}}Envoi sur dps.report…{{else if eq .Status "forge"}}Rangement dans Forge…{{else}}{{.Where}}{{end}}</td>
+          <td class="link">{{if .Permalink}}<a href="{{.Permalink}}" target="_blank">dps.report ↗</a>{{end}}{{if and .Path (or (eq .Status "error") (eq .Status "rejected") (eq .Status "retry"))}} <form method="post" action="/renvoyer" class="inline"><input type="hidden" name="file" value="{{.File}}"><button type="submit" title="Renvoyer ce log maintenant">Renvoyer</button></form>{{end}}</td>
         </tr>
       {{end}}
       </tbody>
