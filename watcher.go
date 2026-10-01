@@ -54,6 +54,15 @@ type sizeAt struct {
 
 // Scrute le dossier des logs et envoie chaque nouveau fichier une fois qu'il est fini d'écrire.
 func (a *app) watch() {
+	defer func() {
+		if r := recover(); r != nil {
+			a.mu.Lock()
+			cfg := a.cfg
+			a.mu.Unlock()
+			reportError(&cfg, "panique dans la surveillance des logs", map[string]any{"panic": fmt.Sprint(r)})
+			panic(r)
+		}
+	}()
 	seen := loadSeen(a.dir)
 	sizes := map[string]sizeAt{}
 	since := time.Now().Add(-recentWindow)
@@ -118,6 +127,7 @@ func (a *app) handle(cfg config, path string) {
 		a.say("  dps.report a refusé %s : %v", name, err)
 		e.Status, e.Where = "error", "dps.report : "+err.Error()
 		a.push(e)
+		reportError(&cfg, "dps.report a refusé un log : "+err.Error(), map[string]any{"file": name})
 		return
 	}
 	e.Boss, e.Success, e.Permalink, e.Status = up.Encounter.Boss, up.Encounter.Success, up.Permalink, "forge"
@@ -128,6 +138,7 @@ func (a *app) handle(cfg config, path string) {
 		a.say("  Forge n’a pas rangé le log : %v", err)
 		e.Status, e.Where = "error", "Forge : "+err.Error()
 		a.push(e)
+		reportError(&cfg, "Forge n’a pas rangé un log : "+err.Error(), map[string]any{"file": name, "permalink": up.Permalink})
 		return
 	}
 	if !in.Stored {
